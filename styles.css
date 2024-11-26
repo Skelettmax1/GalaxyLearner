@@ -1,0 +1,392 @@
+:root {
+    --primary-color: #8B5CF6;
+    --background: #000000;
+    --card-bg: rgba(30, 41, 59, 0.8);
+    --text-primary: #F8FAFC;
+    --text-secondary: #94A3B8;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+}
+
+html {
+    height: 100%;
+    overflow: hidden;
+    position: fixed;
+    width: 100%;
+    touch-action: none;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    width: 100%;
+    overflow: hidden;
+    position: fixed;
+    font-family: -apple-system, 'Segoe UI', system-ui, sans-serif;
+    background: var(--background);
+    color: var(--text-primary);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    -webkit-overflow-scrolling: none;
+    overscroll-behavior: none;
+}
+
+#starfield {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 0;
+}
+
+.container {
+    position: fixed;
+    z-index: 1;
+    width: 100%;
+    height: 100%;
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: clamp(1rem, 3vh, 2rem);
+    opacity: 0;
+    animation: fadeIn 0.8s ease-out forwards;
+    overflow: hidden;
+    touch-action: none;
+}
+
+h1 {
+    color: var(--primary-color);
+    font-size: clamp(2rem, 6vw, 3.5rem);
+    margin-bottom: clamp(1rem, 3vh, 2rem);
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    text-align: center;
+}
+
+h1:hover {
+    transform: scale(1.05);
+    text-shadow: 0 0 20px rgba(139, 92, 246, 0.4);
+}
+
+#creationPanel {
+    background: var(--card-bg);
+    padding: clamp(1rem, 4vw, 2rem);
+    border-radius: 1rem;
+    width: clamp(280px, 90%, 800px);
+    display: none;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    opacity: 0;
+    transform: translateY(-20px);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    position: absolute;
+    z-index: 2;
+}
+
+#creationPanel.visible {
+    display: block;
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.input-group {
+    display: flex;
+    flex-direction: column;
+    gap: clamp(0.5rem, 2vh, 1rem);
+    width: 100%;
+}
+
+.input-group input,
+.input-group button {
+    font-size: clamp(14px, 3vw, 16px);
+    padding: clamp(0.5rem, 2vh, 1rem);
+    width: 100%;
+}
+
+.import-export {
+    display: flex;
+    gap: min(1rem, 2vw);
+    margin-top: min(1.5rem, 3vh);
+    padding-top: min(1.5rem, 3vh);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+input[type="text"] {
+    padding: min(1rem, 2vh);
+    border: 2px solid transparent;
+    border-radius: 0.5rem;
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-primary);
+    transition: all 0.3s ease;
+}
+
+input[type="text"]:focus {
+    border-color: var(--primary-color);
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.3);
+}
+
+input[type="text"]::placeholder {
+    color: var(--text-secondary);
+}
+
+button {
+    padding: min(0.8rem, 1.6vh) min(1.5rem, 3vw);
+    border: none;
+    border-radius: 0.5rem;
+    background: var(--primary-color);
+    color: white;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+button:hover {
+    transform: translateY(-2px);
+    background: #7c4dff;
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+}
+
+button:active {
+    transform: translateY(0);
+}
+
+.flashcard-container {
+    perspective: 1000px;
+    width: clamp(280px, 90%, 800px);
+    height: clamp(200px, 60vh, 600px);
+    margin: auto;
+    position: relative;
+    opacity: 1;
+    transform: translateY(0);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    z-index: 1;
+}
+
+.flashcard-container.hidden {
+    opacity: 0;
+    transform: translateY(20px);
+    pointer-events: none;
+}
+
+.flashcard {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    transform-style: preserve-3d;
+    transition: transform 0.6s;
+    font-size: clamp(16px, 2.5vw, 24px);
+    cursor: pointer;
+    user-select: none;
+    will-change: transform;
+    transform: translateX(0);
+    transition: transform 0.3s ease-out;
+}
+
+.flashcard:active {
+    transform: scale(1.02);
+}
+
+.flashcard.flipped {
+    transform: rotateY(180deg);
+}
+
+.flashcard-front,
+.flashcard-back {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: clamp(1rem, 4vw, 3rem);
+    text-align: center;
+    background: var(--card-bg);
+    border-radius: 1rem;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    border: 3px solid transparent;
+}
+
+.flashcard-back {
+    transform: rotateY(180deg);
+}
+
+.flashcard-inner {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    text-align: center;
+    transform-style: preserve-3d;
+}
+
+.flashcard.swipe-left {
+    animation: swipeLeft 0.6s cubic-bezier(0.4, 0.0, 0.2, 1) forwards;
+}
+
+.flashcard.swipe-right {
+    animation: swipeRight 0.6s cubic-bezier(0.4, 0.0, 0.2, 1) forwards;
+}
+
+.swipe-left .flashcard-front,
+.swipe-left .flashcard-back {
+    border-color: #ff4444;
+    box-shadow: 0 0 20px rgba(255, 68, 68, 0.5);
+}
+
+.swipe-right .flashcard-front,
+.swipe-right .flashcard-back {
+    border-color: #44ff44;
+    box-shadow: 0 0 20px rgba(68, 255, 68, 0.5);
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes swipeLeft {
+    0% {
+        transform: translate(0) scale(1);
+        opacity: 1;
+    }
+    100% {
+        transform: translate(-100%) scale(0.7);
+        opacity: 0;
+    }
+}
+
+@keyframes swipeRight {
+    0% {
+        transform: translate(0) scale(1);
+        opacity: 1;
+    }
+    100% {
+        transform: translate(100%) scale(0.7);
+        opacity: 0;
+    }
+}
+
+/* Mobile-specific adjustments */
+@media screen and (max-width: 480px) {
+    .container {
+        padding: 1rem;
+        gap: 1rem;
+    }
+    
+    #creationPanel {
+        padding: 1rem;
+    }
+    
+    .flashcard {
+        font-size: clamp(14px, 4vw, 16px);
+    }
+}
+
+/* Tablet-specific adjustments */
+@media screen and (min-width: 481px) and (max-width: 1024px) {
+    .container {
+        padding: clamp(1rem, 4vw, 2rem);
+    }
+    
+    .flashcard {
+        font-size: clamp(16px, 3vw, 18px);
+    }
+}
+
+@media (max-width: 768px) {
+    .container {
+        padding: max(env(safe-area-inset-top), 1rem) 
+                max(env(safe-area-inset-right), 1rem) 
+                max(env(safe-area-inset-bottom), 1rem) 
+                max(env(safe-area-inset-left), 1rem);
+    }
+
+    h1 {
+        font-size: clamp(1.8rem, 8vw, 2.5rem);
+        margin-bottom: 1rem;
+    }
+
+    .flashcard-container {
+        height: clamp(180px, 50vh, 400px);
+        width: clamp(260px, 95%, 600px);
+    }
+
+    .input-group input,
+    .input-group button {
+        font-size: 16px;
+        padding: 12px;
+        height: 44px;
+    }
+
+    .import-export {
+        flex-direction: column;
+    }
+
+    .import-export button {
+        width: 100%;
+    }
+}
+
+@media (max-width: 480px) {
+    .container {
+        gap: 0.8rem;
+    }
+
+    #creationPanel {
+        padding: 1rem;
+        width: 95%;
+    }
+}
+
+@supports (-webkit-touch-callout: none) {
+    .flashcard-container {
+        /* Prevent rubber-band effect on iOS */
+        overscroll-behavior-y: none;
+        -webkit-overflow-scrolling: auto;
+    }
+}
+
+/* Improve touch targets */
+button, 
+input[type="text"],
+.flashcard {
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+}
+
+/* Add visual feedback for touch */
+@media (hover: none) {
+    button:active {
+        transform: scale(0.98);
+        opacity: 0.9;
+    }
+
+    .flashcard:active {
+        transform: scale(0.98);
+    }
+}
+
+.flashcard.dragging {
+    transition: none;
+}
