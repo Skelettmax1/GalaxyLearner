@@ -5,8 +5,6 @@ class FlashcardManager {
         this.initializeEventListeners();
         this.isAnimating = false;
         this.isDragging = false;
-        this.swipeThreshold = window.innerWidth * 0.15; // Default swipe threshold
-        this.tapThreshold = 30; // Default tap threshold
     }
 
     loadFlashcards() {
@@ -80,154 +78,104 @@ class FlashcardManager {
         // Toggle creation panel on title click
         document.getElementById('appTitle').addEventListener('click', () => {
             const panel = document.getElementById('creationPanel');
-            const cardContainer = document.querySelector('.flashcard-container');
-            
-            // Toggle visibility with a slight delay for smooth animation
-            if (panel.classList.contains('visible')) {
-                panel.classList.remove('visible');
-                setTimeout(() => {
-                    panel.style.display = 'none';
-                    cardContainer.classList.remove('hidden');
-                }, 300);
-            } else {
-                cardContainer.classList.add('hidden');
-                setTimeout(() => {
-                    panel.style.display = 'block';
-                    // Force reflow
-                    panel.offsetHeight;
-                    panel.classList.add('visible');
-                }, 300);
-            }
+            panel.classList.toggle('visible');
         });
 
+        // Card flip
         const flashcard = document.querySelector('.flashcard');
         let touchStartTime = 0;
         let touchStartX = 0;
         let touchStartY = 0;
-        let currentX = 0;
-        let initialX = 0;
 
-        const handleTouchStart = (e) => {
-            if (this.isAnimating) return;
-            const touch = e.type === 'mousedown' ? e : e.touches[0];
-            
-            touchStartTime = Date.now();
-            touchStartX = touch.clientX;
-            touchStartY = touch.clientY;
-            initialX = touch.clientX;
-            currentX = initialX;
-            
-            // Check if we're on an iPad
-            const isIPad = /iPad|MacIntel/.test(navigator.platform) || 
-                          (navigator.maxTouchPoints && navigator.maxTouchPoints > 1);
-            
-            // Adjust sensitivity for iPad
-            if (isIPad) {
-                this.swipeThreshold = window.innerWidth * 0.1; // Reduce swipe threshold
-                this.tapThreshold = 40; // Increase tap threshold
-            } else {
-                this.swipeThreshold = window.innerWidth * 0.15;
-                this.tapThreshold = 30;
+        flashcard.addEventListener('touchstart', (e) => {
+            if (!this.isAnimating) {
+                touchStartTime = Date.now();
+                touchStartX = e.touches[0].clientX;
+                touchStartY = e.touches[0].clientY;
             }
-            
-            flashcard.classList.add('dragging');
-            this.isDragging = true;
-        };
-
-        const handleTouchMove = (e) => {
-            if (!this.isDragging) return;
-            e.preventDefault();
-            
-            const touch = e.type === 'mousemove' ? e : e.touches[0];
-            currentX = touch.clientX;
-            
-            const diff = currentX - initialX;
-            // Adjust drag distance based on device
-            const maxDrag = window.innerWidth * (/iPad|MacIntel/.test(navigator.platform) ? 0.3 : 0.4);
-            const boundedDiff = Math.max(Math.min(diff, maxDrag), -maxDrag);
-            
-            flashcard.style.transform = `translateX(${boundedDiff}px)`;
-            
-            // Adjust tilt effect for iPad
-            const tiltAngle = (boundedDiff / maxDrag) * (/iPad|MacIntel/.test(navigator.platform) ? 10 : 15);
-            flashcard.style.transform += ` rotate(${tiltAngle}deg)`;
-        };
-
-        const handleTouchEnd = (e) => {
-            if (!this.isDragging) return;
-            
-            this.isDragging = false;
-            flashcard.classList.remove('dragging');
-            flashcard.style.transform = '';
-
-            const touchEndTime = Date.now();
-            const touchDuration = touchEndTime - touchStartTime;
-            const diffX = currentX - initialX;
-            const moveX = Math.abs(diffX);
-
-            // Handle swipe
-            if (moveX > this.swipeThreshold) {
-                const direction = diffX < 0 ? 'left' : 'right';
-                this.swipeCard(direction);
-                return;
-            }
-
-            // Handle tap for flipping
-            if (touchDuration < 300 && moveX < 10) {
-                const flashcardInner = flashcard.querySelector('.flashcard-inner');
-                flashcardInner.classList.toggle('flipped');
-            }
-        };
-
-        // Mouse events for PC
-        flashcard.addEventListener('mousedown', (e) => {
-            handleTouchStart(e);
-            document.addEventListener('mousemove', handleTouchMove);
-            document.addEventListener('mouseup', handleTouchEnd);
         });
 
-        const handleMouseMove = (e) => {
-            if (this.isDragging) {
-                handleTouchMove(e);
+        flashcard.addEventListener('touchend', (e) => {
+            if (this.isAnimating) return;
+            
+            const touchEndX = e.changedTouches[0].clientX;
+            const touchEndY = e.changedTouches[0].clientY;
+            const touchDuration = Date.now() - touchStartTime;
+            const moveX = Math.abs(touchEndX - touchStartX);
+            const moveY = Math.abs(touchEndY - touchStartY);
+
+            // If it's a quick tap without much movement, treat as a flip
+            if (touchDuration < 250 && moveX < 20 && moveY < 20) {
+                flashcard.classList.toggle('flipped');
+            } else if (moveX > 50) {
+                // If there's significant horizontal movement, handle as swipe
+                this.handleSwipe(touchEndX - touchStartX);
             }
-        };
+        });
 
-        const handleMouseUp = (e) => {
-            handleTouchEnd(e);
-            document.removeEventListener('mousemove', handleMouseMove);
-            document.removeEventListener('mouseup', handleMouseUp);
-        };
+        // Mouse handling
+        let isDragging = false;
+        let startX = 0;
+        let startY = 0;
+        let clickStartTime = 0;
 
-        // Touch events for mobile
-        flashcard.addEventListener('touchstart', handleTouchStart, { passive: false });
-        flashcard.addEventListener('touchmove', handleTouchMove, { passive: false });
-        flashcard.addEventListener('touchend', handleTouchEnd);
+        flashcard.addEventListener('mousedown', (e) => {
+            if (!this.isAnimating) {
+                isDragging = true;
+                startX = e.clientX;
+                startY = e.clientY;
+                clickStartTime = Date.now();
+            }
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (!isDragging || this.isAnimating) return;
+            
+            const moveX = Math.abs(e.clientX - startX);
+            const moveY = Math.abs(e.clientY - startY);
+            
+            if (moveX > 50) {
+                this.handleSwipe(e.clientX - startX);
+                isDragging = false;
+            }
+        });
+
+        document.addEventListener('mouseup', (e) => {
+            if (!isDragging) return;
+            
+            const moveX = Math.abs(e.clientX - startX);
+            const moveY = Math.abs(e.clientY - startY);
+            const clickDuration = Date.now() - clickStartTime;
+
+            // If it's a quick click without much movement, treat as a flip
+            if (clickDuration < 250 && moveX < 20 && moveY < 20) {
+                flashcard.classList.toggle('flipped');
+            }
+            
+            isDragging = false;
+        });
 
         // Keyboard navigation
         document.addEventListener('keydown', (e) => {
+            // Only handle keyboard if we're not typing in an input field
             if (document.activeElement.tagName === 'INPUT' || 
                 document.activeElement.tagName === 'TEXTAREA') {
                 return;
             }
-            
-            if (e.key === 'ArrowLeft') {
-                this.swipeCard('left');
-            }
-            if (e.key === 'ArrowRight') {
-                this.swipeCard('right');
-            }
-            if (e.key === ' ') {
-                e.preventDefault();
-                const flashcardInner = flashcard.querySelector('.flashcard-inner');
-                flashcardInner.classList.toggle('flipped');
+
+            if (!this.isAnimating) {
+                if (e.key === 'ArrowLeft') {
+                    this.swipeCard('left'); // Swipe left (incorrect)
+                }
+                if (e.key === 'ArrowRight') {
+                    this.swipeCard('right'); // Swipe right (correct)
+                }
+                if (e.key === ' ') {
+                    e.preventDefault(); // Prevent page scroll
+                    flashcard.classList.toggle('flipped');
+                }
             }
         });
-
-        // Prevent iOS Safari overscroll
-        document.addEventListener('touchmove', (e) => {
-            if (e.touches.length > 1) return;
-            e.preventDefault();
-        }, { passive: false });
     }
 
     handleSwipe(diff) {
@@ -274,9 +222,9 @@ class StarField {
         this.ctx = this.canvas.getContext('2d');
         this.stars = [];
         this.mouse = { x: 0, y: 0 };
-        this.connectionRadius = 350;
+        this.connectionRadius = 150;
         this.time = 0;
-        this.maxStars = 20000; // Maximum number of stars
+        this.maxStars = 200; // Maximum number of stars
         this.init();
     }
 
@@ -330,7 +278,7 @@ class StarField {
             const distance = Math.sqrt(dx * dx + dy * dy);
 
             if (distance < this.connectionRadius) {
-                // Dynamische Opacity für Mausverbindung
+                // Dynamische Opacity fÃ¼r Mausverbindung
                 const mouseOpacity = 0.4 + Math.sin(this.time + star.x) * 0.2;
                 
                 // Gradient zur Maus
@@ -352,7 +300,7 @@ class StarField {
                     const distance2 = Math.sqrt(dx2 * dx2 + dy2 * dy2);
 
                     if (distance2 < this.connectionRadius / 2) {
-                        // Dynamische Opacity für Sternverbindungen
+                        // Dynamische Opacity fÃ¼r Sternverbindungen
                         const starOpacity = 0.35 + Math.sin(this.time + star.x + star2.y) * 0.15;
                         this.ctx.strokeStyle = `rgba(147, 51, 234, ${starOpacity})`;
                         
