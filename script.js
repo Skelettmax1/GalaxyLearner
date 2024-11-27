@@ -276,7 +276,7 @@ class StarField {
         this.mouse = { x: 0, y: 0 };
         this.connectionRadius = 150;
         this.time = 0;
-        this.maxStars = 200; // Maximum number of stars
+        this.maxStars = 2000; // Maximum number of stars
         this.init();
     }
 
