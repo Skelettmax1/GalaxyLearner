@@ -274,9 +274,9 @@ class StarField {
         this.ctx = this.canvas.getContext('2d');
         this.stars = [];
         this.mouse = { x: 0, y: 0 };
-        this.connectionRadius = 150;
+        this.connectionRadius = 350;
         this.time = 0;
-        this.maxStars = 2000; // Maximum number of stars
+        this.maxStars = 20000; // Maximum number of stars
         this.init();
     }
 
