@@ -432,7 +432,7 @@ input[type="text"],
 
     .import-export button {
         flex: 1;
-        height: 56px;
+        height: 300px;
     }
 }
 
